@@ -103,7 +103,11 @@ def generate_logos(prompt: str, company_name: str, count: int = 3) -> tuple[list
         return _placeholder_logos(company_name, count), "placeholder"
 
     try:
-        client = InferenceClient(model=settings.hf_t2i_model, token=settings.hf_token)
+        # huggingface_hub >=0.26 routes through the newer Inference Providers
+        # system instead of the retired api-inference.huggingface.co host;
+        # "hf-inference" keeps this on HuggingFace's own free-tier serverless
+        # inference rather than a paid third-party provider.
+        client = InferenceClient(model=settings.hf_t2i_model, token=settings.hf_token, provider="hf-inference")
         images: list[str] = []
         for _ in range(count):
             seed = random.randint(0, 2**31 - 1)
