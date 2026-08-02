@@ -23,6 +23,6 @@ export interface GeneratePromptResult {
 
 export interface GenerateLogosResult {
   images: string[]
-  imageSource: 'huggingface' | 'placeholder'
+  imageSource: 'huggingface' | 'openai' | 'placeholder'
   steps: LogoStep[]
 }
