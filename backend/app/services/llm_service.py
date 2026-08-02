@@ -1,6 +1,10 @@
+import logging
+
 from openai import OpenAI
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
     "You are a branding expert who writes concise, vivid prompts for a "
@@ -59,4 +63,5 @@ def refine_prompt(
             raise ValueError("empty LLM response")
         return text, "llm"
     except Exception:
+        logger.exception("OpenAI prompt refinement failed, falling back to template")
         return _template_prompt(company_name, slogan, industry, style, colors), "template"
