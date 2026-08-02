@@ -11,6 +11,11 @@ interface StepApiShape {
   status: string
 }
 
+// In local dev this stays empty so requests hit the Vite dev-server proxy
+// (see vite.config.ts). In production the frontend and backend are deployed
+// separately, so VITE_API_BASE_URL must point at the deployed backend origin.
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
     const data = await response.json()
@@ -32,7 +37,7 @@ function toSteps(steps: StepApiShape[]): LogoStep[] {
 export async function requestPromptGeneration(
   values: LogoFormValues,
 ): Promise<GeneratePromptResult> {
-  const response = await fetch('/api/prompt/generate', {
+  const response = await fetch(`${API_BASE}/api/prompt/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -60,7 +65,7 @@ export async function requestPromptGeneration(
 export async function requestLogoGeneration(
   threadId: string,
 ): Promise<GenerateLogosResult> {
-  const response = await fetch('/api/logo/generate', {
+  const response = await fetch(`${API_BASE}/api/logo/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ thread_id: threadId }),
