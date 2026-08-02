@@ -58,7 +58,44 @@ npm run dev
 | `OPENAI_MODEL` | 사용할 OpenAI 모델 (기본 `gpt-4o-mini`) | - |
 | `HF_TOKEN` | HuggingFace Inference API 토큰 | Pillow 플레이스홀더 로고 3종 생성 |
 | `HF_T2I_MODEL` | text-to-image 모델 (기본 `black-forest-labs/FLUX.1-schnell`) | - |
-| `FRONTEND_ORIGIN` | CORS 허용 origin (기본 `http://localhost:5173`) | - |
+| `FRONTEND_ORIGINS` | CORS 허용 origin, 콤마로 여러 개 지정 가능 (기본 `http://localhost:5173,https://logo-gen-ten.vercel.app`) | - |
+
+## 환경 변수 (`frontend/.env`)
+
+| 변수 | 설명 | 미설정 시 동작 |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | 배포된 백엔드 주소 (예: `https://logo-gen-api.onrender.com`) | Vite dev 서버 프록시로 `localhost:8000` 사용 (로컬 개발용) |
+
+## 배포 (프론트/백엔드 분리 배포)
+
+프론트엔드(Vercel 등 정적 호스팅)와 백엔드(FastAPI)는 서로 다른 도메인에
+배포되므로, 로컬 개발 때 쓰던 Vite 프록시(`/api` → `localhost:8000`)는
+배포본에는 적용되지 않습니다. 아래 순서로 배포하세요.
+
+### 1. 백엔드를 Render에 배포
+
+1. https://render.com 가입 후 **New → Web Service** 선택, 이 GitHub 저장소 연결
+   (저장소 루트에 있는 `render.yaml`을 인식하면 **New → Blueprint**로도 자동 설정 가능)
+2. 수동으로 만들 경우 다음 값을 입력:
+   - Root Directory: `backend`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+3. Environment 탭에서 환경 변수 등록: `OPENAI_API_KEY`, `HF_TOKEN` (Secret),
+   `OPENAI_MODEL`, `HF_T2I_MODEL`, `FRONTEND_ORIGINS`(실제 프론트 배포 주소 포함)
+4. 배포 완료 후 발급되는 주소(예: `https://logo-gen-api.onrender.com`)를 기록
+
+### 2. 프론트엔드(Vercel)에 백엔드 주소 연결
+
+1. Vercel 프로젝트 → **Settings → Environment Variables**에서
+   `VITE_API_BASE_URL` = 1번에서 발급받은 Render 백엔드 주소로 등록
+   (Root Directory는 `frontend`로 설정되어 있어야 합니다)
+2. 저장 후 **Redeploy** 실행
+
+### 3. 확인
+
+배포된 프론트엔드 주소로 접속해 회사명/슬로건 입력 → "프롬프트 생성" →
+"최종 로고 생성"까지 정상 동작하는지 확인. 만약 CORS 에러가 뜨면 백엔드의
+`FRONTEND_ORIGINS`에 프론트엔드 배포 주소가 정확히 포함되어 있는지 확인하세요.
 
 ## API
 
