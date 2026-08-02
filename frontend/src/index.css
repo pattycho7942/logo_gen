@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  font-family: 'Pretendard', system-ui, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+  background: #f7f6fb;
+  color: #1f1b2e;
+}
