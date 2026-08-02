@@ -1,11 +1,14 @@
 import base64
 import io
+import logging
 import random
 
 from huggingface_hub import InferenceClient
 from PIL import Image, ImageDraw, ImageFont
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 _PALETTES = [
     {"bg": (238, 233, 254), "accent": (109, 40, 217), "text": (255, 255, 255)},
@@ -110,4 +113,5 @@ def generate_logos(prompt: str, company_name: str, count: int = 3) -> tuple[list
             raise ValueError("incomplete image generation result")
         return images, "huggingface"
     except Exception:
+        logger.exception("HuggingFace text_to_image call failed, falling back to placeholder")
         return _placeholder_logos(company_name, count), "placeholder"
