@@ -4,6 +4,7 @@ import logging
 import random
 
 from huggingface_hub import InferenceClient
+from openai import OpenAI
 from PIL import Image, ImageDraw, ImageFont
 
 from app.config import settings
@@ -98,24 +99,42 @@ def _placeholder_logos(company_name: str, count: int) -> list[str]:
     return [_to_data_url(_placeholder_logo(company_name, i)) for i in range(count)]
 
 
-def generate_logos(prompt: str, company_name: str, count: int = 3) -> tuple[list[str], str]:
-    if not settings.image_gen_enabled:
-        return _placeholder_logos(company_name, count), "placeholder"
+def _huggingface_logos(prompt: str, count: int) -> list[str]:
+    # huggingface_hub >=0.26 routes through the newer Inference Providers
+    # system instead of the retired api-inference.huggingface.co host;
+    # "hf-inference" keeps this on HuggingFace's own free-tier serverless
+    # inference rather than a paid third-party provider.
+    client = InferenceClient(model=settings.hf_t2i_model, token=settings.hf_token, provider="hf-inference")
+    images: list[str] = []
+    for _ in range(count):
+        seed = random.randint(0, 2**31 - 1)
+        pil_image = client.text_to_image(prompt, seed=seed)
+        images.append(_to_data_url(pil_image))
+    if len(images) != count:
+        raise ValueError("incomplete image generation result")
+    return images
 
-    try:
-        # huggingface_hub >=0.26 routes through the newer Inference Providers
-        # system instead of the retired api-inference.huggingface.co host;
-        # "hf-inference" keeps this on HuggingFace's own free-tier serverless
-        # inference rather than a paid third-party provider.
-        client = InferenceClient(model=settings.hf_t2i_model, token=settings.hf_token, provider="hf-inference")
-        images: list[str] = []
-        for _ in range(count):
-            seed = random.randint(0, 2**31 - 1)
-            pil_image = client.text_to_image(prompt, seed=seed)
-            images.append(_to_data_url(pil_image))
-        if len(images) != count:
-            raise ValueError("incomplete image generation result")
-        return images, "huggingface"
-    except Exception:
-        logger.exception("HuggingFace text_to_image call failed, falling back to placeholder")
-        return _placeholder_logos(company_name, count), "placeholder"
+
+def _openai_logos(prompt: str, count: int) -> list[str]:
+    client = OpenAI(api_key=settings.openai_api_key)
+    response = client.images.generate(model="gpt-image-1", prompt=prompt, n=count, size="1024x1024")
+    images = [f"data:image/png;base64,{item.b64_json}" for item in response.data]
+    if len(images) != count:
+        raise ValueError("incomplete image generation result")
+    return images
+
+
+def generate_logos(prompt: str, company_name: str, count: int = 3) -> tuple[list[str], str]:
+    if settings.image_gen_enabled:
+        try:
+            return _huggingface_logos(prompt, count), "huggingface"
+        except Exception:
+            logger.exception("HuggingFace text_to_image call failed, trying OpenAI fallback")
+
+    if settings.llm_enabled:
+        try:
+            return _openai_logos(prompt, count), "openai"
+        except Exception:
+            logger.exception("OpenAI image generation failed, falling back to placeholder")
+
+    return _placeholder_logos(company_name, count), "placeholder"

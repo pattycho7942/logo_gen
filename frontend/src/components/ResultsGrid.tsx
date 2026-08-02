@@ -1,8 +1,14 @@
 interface Props {
   images: string[]
-  imageSource: 'huggingface' | 'placeholder'
+  imageSource: 'huggingface' | 'openai' | 'placeholder'
   loading: boolean
   companyName: string
+}
+
+const SOURCE_LABEL: Record<Props['imageSource'], string> = {
+  huggingface: 'HuggingFace 생성',
+  openai: 'OpenAI 생성',
+  placeholder: '데모 이미지',
 }
 
 function Skeleton() {
@@ -21,12 +27,12 @@ export default function ResultsGrid({ images, imageSource, loading, companyName 
         {images.length > 0 && (
           <span
             className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-              imageSource === 'huggingface'
-                ? 'bg-violet-100 text-violet-700'
-                : 'bg-amber-100 text-amber-700'
+              imageSource === 'placeholder'
+                ? 'bg-amber-100 text-amber-700'
+                : 'bg-violet-100 text-violet-700'
             }`}
           >
-            {imageSource === 'huggingface' ? 'HuggingFace 생성' : '데모 이미지'}
+            {SOURCE_LABEL[imageSource]}
           </span>
         )}
       </div>

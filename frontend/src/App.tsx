@@ -37,7 +37,7 @@ export default function App() {
   const [generatedPrompt, setGeneratedPrompt] = useState('')
   const [promptSource, setPromptSource] = useState<'llm' | 'template'>('template')
   const [images, setImages] = useState<string[]>([])
-  const [imageSource, setImageSource] = useState<'huggingface' | 'placeholder'>('placeholder')
+  const [imageSource, setImageSource] = useState<'huggingface' | 'openai' | 'placeholder'>('placeholder')
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false)
   const [isGeneratingLogos, setIsGeneratingLogos] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)

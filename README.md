@@ -17,8 +17,10 @@ HuggingFace text-to-image 모델로 로고 이미지를 생성합니다.
   - `app/services/llm_service.py` — OpenAI(ChatGPT) API로 프롬프트 보강,
     키가 없으면 템플릿 조합으로 자동 대체(fallback).
   - `app/services/image_service.py` — HuggingFace Inference API
-    (`text_to_image`)로 로고 3장 생성, 키가 없으면 Pillow로 만든 데모용
-    플레이스홀더 로고 3종으로 자동 대체.
+    (`text_to_image`)로 로고 3장 생성을 우선 시도하고, 모델이 없어졌거나
+    호출이 실패하면 OpenAI Images API(`gpt-image-1`)로 자동 대체, 그마저도
+    안 되면(키 없음 등) Pillow로 만든 데모용 플레이스홀더 로고 3종으로
+    최종 대체.
 - **프론트엔드**: React + Vite + TypeScript + Tailwind CSS (`frontend/`)
   - 4단계 진행 스테퍼(`StepProgress`), 입력 폼(`LogoForm`), 프롬프트
     미리보기(`PromptPreview`), 결과 그리드(`ResultsGrid`)로 구성.
@@ -54,10 +56,10 @@ npm run dev
 
 | 변수 | 설명 | 미설정 시 동작 |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | ChatGPT 프롬프트 보강용 | 템플릿 조합으로 프롬프트 생성 |
-| `OPENAI_MODEL` | 사용할 OpenAI 모델 (기본 `gpt-4o-mini`) | - |
-| `HF_TOKEN` | HuggingFace Inference API 토큰 | Pillow 플레이스홀더 로고 3종 생성 |
-| `HF_T2I_MODEL` | text-to-image 모델 (기본 `black-forest-labs/FLUX.1-schnell`) | - |
+| `OPENAI_API_KEY` | ChatGPT 프롬프트 보강 + 로고 이미지 생성(HuggingFace 실패 시 대체)용 | 프롬프트는 템플릿 조합, 이미지는 HuggingFace만 시도 |
+| `OPENAI_MODEL` | 프롬프트 보강용 OpenAI 모델 (기본 `gpt-4o-mini`) | - |
+| `HF_TOKEN` | HuggingFace Inference API 토큰 | 이미지 생성은 바로 OpenAI(있으면)로 시도 |
+| `HF_T2I_MODEL` | text-to-image 모델 (기본 `black-forest-labs/FLUX.1-schnell`) — HuggingFace 무료 추론에서 지원 종료된 모델이면 자동으로 OpenAI로 넘어감 | - |
 | `FRONTEND_ORIGINS` | CORS 허용 origin, 콤마로 여러 개 지정 가능 (기본 `http://localhost:5173,https://logo-gen-ten.vercel.app`) | - |
 
 ## 환경 변수 (`frontend/.env`)

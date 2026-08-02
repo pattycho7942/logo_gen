@@ -30,5 +30,5 @@ class GenerateLogosRequest(BaseModel):
 
 class GenerateLogosResponse(BaseModel):
     images: list[str]  # base64 data URLs
-    image_source: str  # "huggingface" | "placeholder"
+    image_source: str  # "huggingface" | "openai" | "placeholder"
     steps: list[LogoStep]
