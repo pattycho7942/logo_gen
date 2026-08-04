@@ -23,12 +23,15 @@ export interface GenerateLogosResult {
   steps: LogoStep[]
 }
 
+export type CardLayout = 'classic' | 'centered' | 'side_panel'
+
 export interface CardFormValues {
   contactName: string
   title: string
   phone: string
   email: string
   address: string
+  layout: CardLayout
 }
 
 export interface GenerateCardResult {

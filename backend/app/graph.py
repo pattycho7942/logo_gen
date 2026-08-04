@@ -31,6 +31,7 @@ class LogoState(TypedDict, total=False):
     phone: str
     email: str
     address: str
+    layout: str
     card_image: str
     steps: list[dict]
 

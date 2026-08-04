@@ -81,6 +81,7 @@ export async function requestCardGeneration(
       phone: card.phone || undefined,
       email: card.email || undefined,
       address: card.address || undefined,
+      layout: card.layout,
     }),
   })
 

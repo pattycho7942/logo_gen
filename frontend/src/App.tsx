@@ -31,6 +31,7 @@ const DEFAULT_CARD_VALUES: CardFormValues = {
   phone: '',
   email: '',
   address: '',
+  layout: 'classic',
 }
 
 function Card({ children }: { children: React.ReactNode }) {

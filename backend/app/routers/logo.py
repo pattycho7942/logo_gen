@@ -67,6 +67,7 @@ def generate_business_card(payload: GenerateCardRequest) -> GenerateCardResponse
         phone=phone,
         email=email,
         address=address,
+        layout=payload.layout,
     )
     steps = [{"id": step_id, "label": label, "status": "done"} for step_id, label in STEP_DEFS]
 
@@ -79,6 +80,7 @@ def generate_business_card(payload: GenerateCardRequest) -> GenerateCardResponse
             "phone": phone,
             "email": email,
             "address": address,
+            "layout": payload.layout,
             "card_image": card_image,
             "steps": steps,
         },

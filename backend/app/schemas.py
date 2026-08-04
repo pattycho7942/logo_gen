@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -34,6 +34,7 @@ class GenerateCardRequest(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     address: Optional[str] = None
+    layout: Literal["classic", "centered", "side_panel"] = "classic"
 
 
 class GenerateCardResponse(BaseModel):
