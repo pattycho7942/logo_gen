@@ -139,7 +139,7 @@ export default function LogoForm({ values, onChange, onSubmit, loading }: Props)
         disabled={!canSubmit || loading}
         className="mt-2 w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-violet-200 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {loading ? '프롬프트 생성 중...' : '프롬프트 생성'}
+        {loading ? '로고 생성 중...' : '로고 생성'}
       </button>
     </form>
   )
