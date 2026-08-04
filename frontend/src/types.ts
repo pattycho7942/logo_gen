@@ -14,15 +14,24 @@ export interface LogoFormValues {
   colors: string
 }
 
-export interface GeneratePromptResult {
+export interface GenerateLogosResult {
   threadId: string
   generatedPrompt: string
   promptSource: 'llm' | 'template'
+  images: string[]
+  imageSource: 'huggingface' | 'openai' | 'placeholder'
   steps: LogoStep[]
 }
 
-export interface GenerateLogosResult {
-  images: string[]
-  imageSource: 'huggingface' | 'openai' | 'placeholder'
+export interface CardFormValues {
+  contactName: string
+  title: string
+  phone: string
+  email: string
+  address: string
+}
+
+export interface GenerateCardResult {
+  cardImage: string
   steps: LogoStep[]
 }

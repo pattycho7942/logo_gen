@@ -3,6 +3,9 @@ interface Props {
   imageSource: 'huggingface' | 'openai' | 'placeholder'
   loading: boolean
   companyName: string
+  selectedIndex: number | null
+  onSelect: (index: number) => void
+  cardLoading: boolean
 }
 
 const SOURCE_LABEL: Record<Props['imageSource'], string> = {
@@ -17,7 +20,15 @@ function Skeleton() {
   )
 }
 
-export default function ResultsGrid({ images, imageSource, loading, companyName }: Props) {
+export default function ResultsGrid({
+  images,
+  imageSource,
+  loading,
+  companyName,
+  selectedIndex,
+  onSelect,
+  cardLoading,
+}: Props) {
   if (!loading && images.length === 0) return null
 
   return (
@@ -36,28 +47,53 @@ export default function ResultsGrid({ images, imageSource, loading, companyName 
           </span>
         )}
       </div>
+      {images.length > 0 && (
+        <p className="text-xs text-gray-400">로고를 클릭하면 그 자리에서 명함이 만들어져요.</p>
+      )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {loading
           ? [0, 1, 2].map((i) => <Skeleton key={i} />)
-          : images.map((src, i) => (
-              <div
-                key={i}
-                className="flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
-              >
-                <img
-                  src={src}
-                  alt={`${companyName} 로고 시안 ${i + 1}`}
-                  className="aspect-square w-full object-cover"
-                />
-                <a
-                  href={src}
-                  download={`${companyName || 'logo'}-시안${i + 1}.png`}
-                  className="border-t border-gray-100 py-2.5 text-center text-sm font-medium text-violet-600 transition hover:bg-violet-50"
+          : images.map((src, i) => {
+              const selected = selectedIndex === i
+              return (
+                <div
+                  key={i}
+                  className={`flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition ${
+                    selected ? 'border-violet-500 ring-2 ring-violet-200' : 'border-gray-200'
+                  }`}
                 >
-                  다운로드
-                </a>
-              </div>
-            ))}
+                  <button
+                    type="button"
+                    onClick={() => onSelect(i)}
+                    disabled={cardLoading}
+                    className="relative disabled:cursor-not-allowed"
+                  >
+                    <img
+                      src={src}
+                      alt={`${companyName} 로고 시안 ${i + 1}`}
+                      className="aspect-square w-full object-cover"
+                    />
+                    {selected && cardLoading && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-white/70">
+                        <span className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+                      </span>
+                    )}
+                    {selected && !cardLoading && (
+                      <span className="absolute right-2 top-2 rounded-full bg-violet-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow">
+                        선택됨
+                      </span>
+                    )}
+                  </button>
+                  <a
+                    href={src}
+                    download={`${companyName || 'logo'}-시안${i + 1}.png`}
+                    className="border-t border-gray-100 py-2.5 text-center text-sm font-medium text-violet-600 transition hover:bg-violet-50"
+                  >
+                    다운로드
+                  </a>
+                </div>
+              )
+            })}
       </div>
     </div>
   )

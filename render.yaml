@@ -16,4 +16,4 @@ services:
       - key: HF_T2I_MODEL
         value: black-forest-labs/FLUX.1-schnell
       - key: FRONTEND_ORIGINS
-        value: http://localhost:5173,https://logo-gen-ten.vercel.app
+        value: http://localhost:5173,https://logo-gen-ten.vercel.app,https://logo-1wkqusnzm-patty1103.vercel.app

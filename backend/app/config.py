@@ -10,7 +10,10 @@ class Settings(BaseSettings):
     hf_token: str = ""
     hf_t2i_model: str = "black-forest-labs/FLUX.1-schnell"
 
-    frontend_origins: str = "http://localhost:5173,https://logo-gen-ten.vercel.app"
+    frontend_origins: str = (
+        "http://localhost:5173,https://logo-gen-ten.vercel.app,"
+        "https://logo-1wkqusnzm-patty1103.vercel.app"
+    )
 
     @property
     def frontend_origin_list(self) -> list[str]:
