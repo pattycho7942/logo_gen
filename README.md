@@ -71,7 +71,7 @@ npm run dev
 | `OPENAI_MODEL` | 프롬프트 보강용 OpenAI 모델 (기본 `gpt-4o-mini`) | - |
 | `HF_TOKEN` | HuggingFace Inference API 토큰 | 이미지 생성은 바로 OpenAI(있으면)로 시도 |
 | `HF_T2I_MODEL` | text-to-image 모델 (기본 `black-forest-labs/FLUX.1-schnell`) — HuggingFace 무료 추론에서 지원 종료된 모델이면 자동으로 OpenAI로 넘어감 | - |
-| `FRONTEND_ORIGINS` | CORS 허용 origin, 콤마로 여러 개 지정 가능 (기본 `http://localhost:5173,https://logo-gen-ten.vercel.app`) | - |
+| `FRONTEND_ORIGINS` | CORS 허용 origin, 콤마로 여러 개 지정 가능 (기본 `http://localhost:5173,https://logo-gen-ten.vercel.app,https://logo-1wkqusnzm-patty1103.vercel.app`) — Vercel 배포 주소가 바뀌면(재배포·프로젝트 변경 등) 이 값도 새 주소로 업데이트해야 합니다 | - |
 
 ## 환경 변수 (`frontend/.env`)
 
