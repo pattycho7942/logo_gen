@@ -12,7 +12,8 @@ class Settings(BaseSettings):
 
     frontend_origins: str = (
         "http://localhost:5173,https://logo-gen-ten.vercel.app,"
-        "https://logo-1wkqusnzm-patty1103.vercel.app"
+        "https://logo-1wkqusnzm-patty1103.vercel.app,"
+        "https://logo-gen-git-main-patty1103.vercel.app"
     )
 
     @property
