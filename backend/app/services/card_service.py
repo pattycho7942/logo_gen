@@ -2,7 +2,7 @@ import base64
 import io
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 _FONT_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
 _REGULAR_FONT_PATH = _FONT_DIR / "NanumGothic.ttf"
@@ -34,6 +34,26 @@ def _accent_color(logo: Image.Image) -> tuple[int, int, int]:
     return logo.resize((1, 1)).getpixel((0, 0))
 
 
+def _strip_background(logo: Image.Image, tolerance: int = 36) -> Image.Image:
+    rgb = logo.convert("RGB")
+    corners = [
+        rgb.getpixel((0, 0)),
+        rgb.getpixel((rgb.width - 1, 0)),
+        rgb.getpixel((0, rgb.height - 1)),
+        rgb.getpixel((rgb.width - 1, rgb.height - 1)),
+    ]
+    bg_color = tuple(sum(c[i] for c in corners) // len(corners) for i in range(3))
+
+    bg_plate = Image.new("RGB", rgb.size, bg_color)
+    diff_r, diff_g, diff_b = ImageChops.difference(rgb, bg_plate).split()
+    distance = ImageChops.lighter(ImageChops.lighter(diff_r, diff_g), diff_b)
+    alpha = distance.point(lambda p: 255 if p > tolerance else 0)
+
+    result = rgb.convert("RGBA")
+    result.putalpha(alpha)
+    return result
+
+
 def generate_business_card(
     logo_data_url: str,
     company_name: str,
@@ -50,7 +70,8 @@ def generate_business_card(
     card = Image.new("RGB", (CARD_WIDTH, CARD_HEIGHT), (255, 255, 255))
     draw = ImageDraw.Draw(card)
 
-    card.paste(logo.resize((_LOGO_SIZE, _LOGO_SIZE)), (_PADDING, _PADDING))
+    logo_cutout = _strip_background(logo).resize((_LOGO_SIZE, _LOGO_SIZE))
+    card.paste(logo_cutout, (_PADDING, _PADDING), logo_cutout)
 
     bar_x = _PADDING + _LOGO_SIZE + 48
     draw.rectangle([bar_x, _PADDING, bar_x + 6, CARD_HEIGHT - _PADDING], fill=accent)
