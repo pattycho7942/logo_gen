@@ -3,9 +3,6 @@ import type { CardFormValues } from '../types'
 interface Props {
   values: CardFormValues
   onChange: (values: CardFormValues) => void
-  onSubmit: () => void
-  loading: boolean
-  logoSelected: boolean
 }
 
 const FIELDS: { key: keyof CardFormValues; label: string; placeholder: string }[] = [
@@ -16,21 +13,15 @@ const FIELDS: { key: keyof CardFormValues; label: string; placeholder: string }[
   { key: 'address', label: '주소', placeholder: '예: 서울시 강남구' },
 ]
 
-export default function CardForm({ values, onChange, onSubmit, loading, logoSelected }: Props) {
+export default function CardForm({ values, onChange }: Props) {
   const update = (patch: Partial<CardFormValues>) => onChange({ ...values, ...patch })
 
   return (
-    <form
-      className="flex flex-col gap-6"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (logoSelected && !loading) onSubmit()
-      }}
-    >
+    <div className="flex flex-col gap-6">
       <div>
         <h3 className="text-base font-semibold text-gray-900">명함 정보 입력</h3>
         <p className="mt-1 text-xs text-gray-400">
-          모두 선택 입력이에요. 위에서 명함에 쓸 로고도 하나 선택해주세요.
+          모두 선택 입력이에요. 아래에서 로고 시안을 고르면 이 정보로 명함이 바로 만들어져요.
         </p>
       </div>
 
@@ -48,14 +39,6 @@ export default function CardForm({ values, onChange, onSubmit, loading, logoSele
           </label>
         ))}
       </div>
-
-      <button
-        type="submit"
-        disabled={!logoSelected || loading}
-        className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-violet-200 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {loading ? '명함 생성 중...' : logoSelected ? '명함 생성' : '위에서 로고를 먼저 선택해주세요'}
-      </button>
-    </form>
+    </div>
   )
 }

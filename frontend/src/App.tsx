@@ -1,9 +1,5 @@
 import { useState } from 'react'
-import {
-  requestCardGeneration,
-  requestLogoGeneration,
-  requestPromptGeneration,
-} from './api/client'
+import { requestCardGeneration, requestLogoGeneration } from './api/client'
 import CardForm from './components/CardForm'
 import CardPreview from './components/CardPreview'
 import LogoForm from './components/LogoForm'
@@ -56,16 +52,16 @@ export default function App() {
   const [selectedLogoIndex, setSelectedLogoIndex] = useState<number | null>(null)
   const [cardValues, setCardValues] = useState<CardFormValues>(DEFAULT_CARD_VALUES)
   const [cardImage, setCardImage] = useState<string>('')
-  const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false)
   const [isGeneratingLogos, setIsGeneratingLogos] = useState(false)
   const [isGeneratingCard, setIsGeneratingCard] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const displaySteps = steps.map((step) => {
-    if (isGeneratingPrompt && step.id === 'generate_prompt' && step.status === 'pending') {
-      return { ...step, status: 'active' as const }
-    }
-    if (isGeneratingLogos && step.id === 'generate_logos' && step.status === 'pending') {
+    if (
+      isGeneratingLogos &&
+      (step.id === 'generate_prompt' || step.id === 'generate_logos') &&
+      step.status === 'pending'
+    ) {
       return { ...step, status: 'active' as const }
     }
     if (isGeneratingCard && step.id === 'generate_business_card' && step.status === 'pending') {
@@ -74,33 +70,17 @@ export default function App() {
     return step
   })
 
-  async function handleGeneratePrompt() {
+  async function handleGenerateLogos() {
     setErrorMessage(null)
-    setIsGeneratingPrompt(true)
+    setIsGeneratingLogos(true)
     setImages([])
     setSelectedLogoIndex(null)
     setCardImage('')
     try {
-      const result = await requestPromptGeneration(formValues)
+      const result = await requestLogoGeneration(formValues)
       setThreadId(result.threadId)
       setGeneratedPrompt(result.generatedPrompt)
       setPromptSource(result.promptSource)
-      setSteps(result.steps)
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '프롬프트 생성에 실패했습니다.')
-    } finally {
-      setIsGeneratingPrompt(false)
-    }
-  }
-
-  async function handleGenerateLogos() {
-    if (!threadId) return
-    setErrorMessage(null)
-    setIsGeneratingLogos(true)
-    setSelectedLogoIndex(null)
-    setCardImage('')
-    try {
-      const result = await requestLogoGeneration(threadId)
       setImages(result.images)
       setImageSource(result.imageSource)
       setSteps(result.steps)
@@ -111,12 +91,13 @@ export default function App() {
     }
   }
 
-  async function handleGenerateCard() {
-    if (!threadId || selectedLogoIndex === null) return
+  async function handleGenerateCard(logoIndex: number) {
+    if (!threadId) return
     setErrorMessage(null)
+    setSelectedLogoIndex(logoIndex)
     setIsGeneratingCard(true)
     try {
-      const result = await requestCardGeneration(threadId, selectedLogoIndex, cardValues)
+      const result = await requestCardGeneration(threadId, logoIndex, cardValues)
       setCardImage(result.cardImage)
       setSteps(result.steps)
     } catch (err) {
@@ -151,8 +132,8 @@ export default function App() {
             AI가 만드는 우리 회사 로고
           </h1>
           <p className="max-w-lg text-sm text-gray-500 sm:text-base">
-            회사명과 슬로건만 입력하면 LangGraph 파이프라인이 프롬프트를 만들고,
-            AI 이미지 모델이 로고 시안 3가지를 자동으로 생성해드려요.
+            회사명과 슬로건만 입력하면 AI가 로고 시안 3가지를 한 번에 만들어드려요.
+            마음에 드는 로고를 고르면 그 자리에서 명함까지 바로 완성돼요.
           </p>
         </div>
 
@@ -167,8 +148,8 @@ export default function App() {
             <LogoForm
               values={formValues}
               onChange={setFormValues}
-              onSubmit={handleGeneratePrompt}
-              loading={isGeneratingPrompt}
+              onSubmit={handleGenerateLogos}
+              loading={isGeneratingLogos}
             />
           </Card>
 
@@ -178,14 +159,9 @@ export default function App() {
             </div>
           )}
 
-          {generatedPrompt && (
+          {generatedPrompt && !isGeneratingLogos && (
             <Card>
-              <PromptPreview
-                prompt={generatedPrompt}
-                promptSource={promptSource}
-                onGenerateLogos={handleGenerateLogos}
-                loading={isGeneratingLogos}
-              />
+              <PromptPreview prompt={generatedPrompt} promptSource={promptSource} />
             </Card>
           )}
 
@@ -197,20 +173,15 @@ export default function App() {
                 loading={isGeneratingLogos}
                 companyName={formValues.companyName}
                 selectedIndex={selectedLogoIndex}
-                onSelect={setSelectedLogoIndex}
+                onSelect={handleGenerateCard}
+                cardLoading={isGeneratingCard}
               />
             </Card>
           )}
 
           {images.length > 0 && !isGeneratingLogos && (
             <Card>
-              <CardForm
-                values={cardValues}
-                onChange={setCardValues}
-                onSubmit={handleGenerateCard}
-                loading={isGeneratingCard}
-                logoSelected={selectedLogoIndex !== null}
-              />
+              <CardForm values={cardValues} onChange={setCardValues} />
             </Card>
           )}
 
@@ -220,6 +191,7 @@ export default function App() {
                 cardImage={cardImage}
                 loading={isGeneratingCard}
                 companyName={formValues.companyName}
+                onRegenerate={() => selectedLogoIndex !== null && handleGenerateCard(selectedLogoIndex)}
               />
             </Card>
           )}

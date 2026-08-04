@@ -2,7 +2,6 @@ import type {
   CardFormValues,
   GenerateCardResult,
   GenerateLogosResult,
-  GeneratePromptResult,
   LogoFormValues,
   LogoStep,
 } from '../types'
@@ -36,10 +35,10 @@ function toSteps(steps: StepApiShape[]): LogoStep[] {
   }))
 }
 
-export async function requestPromptGeneration(
+export async function requestLogoGeneration(
   values: LogoFormValues,
-): Promise<GeneratePromptResult> {
-  const response = await fetch(`${API_BASE}/api/prompt/generate`, {
+): Promise<GenerateLogosResult> {
+  const response = await fetch(`${API_BASE}/api/logo/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -60,25 +59,6 @@ export async function requestPromptGeneration(
     threadId: data.thread_id,
     generatedPrompt: data.generated_prompt,
     promptSource: data.prompt_source,
-    steps: toSteps(data.steps),
-  }
-}
-
-export async function requestLogoGeneration(
-  threadId: string,
-): Promise<GenerateLogosResult> {
-  const response = await fetch(`${API_BASE}/api/logo/generate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ thread_id: threadId }),
-  })
-
-  if (!response.ok) {
-    throw new Error(await parseErrorMessage(response))
-  }
-
-  const data = await response.json()
-  return {
     images: data.images,
     imageSource: data.image_source,
     steps: toSteps(data.steps),

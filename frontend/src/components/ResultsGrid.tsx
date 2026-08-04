@@ -5,6 +5,7 @@ interface Props {
   companyName: string
   selectedIndex: number | null
   onSelect: (index: number) => void
+  cardLoading: boolean
 }
 
 const SOURCE_LABEL: Record<Props['imageSource'], string> = {
@@ -26,6 +27,7 @@ export default function ResultsGrid({
   companyName,
   selectedIndex,
   onSelect,
+  cardLoading,
 }: Props) {
   if (!loading && images.length === 0) return null
 
@@ -46,7 +48,7 @@ export default function ResultsGrid({
         )}
       </div>
       {images.length > 0 && (
-        <p className="text-xs text-gray-400">로고를 클릭하면 명함 제작에 사용할 로고로 선택돼요.</p>
+        <p className="text-xs text-gray-400">로고를 클릭하면 그 자리에서 명함이 만들어져요.</p>
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {loading
@@ -63,14 +65,20 @@ export default function ResultsGrid({
                   <button
                     type="button"
                     onClick={() => onSelect(i)}
-                    className="relative"
+                    disabled={cardLoading}
+                    className="relative disabled:cursor-not-allowed"
                   >
                     <img
                       src={src}
                       alt={`${companyName} 로고 시안 ${i + 1}`}
                       className="aspect-square w-full object-cover"
                     />
-                    {selected && (
+                    {selected && cardLoading && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-white/70">
+                        <span className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+                      </span>
+                    )}
+                    {selected && !cardLoading && (
                       <span className="absolute right-2 top-2 rounded-full bg-violet-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow">
                         선택됨
                       </span>

@@ -111,7 +111,7 @@ def build_graph():
     checkpointer = MemorySaver()
     return builder.compile(
         checkpointer=checkpointer,
-        interrupt_after=["generate_prompt", "generate_logos"],
+        interrupt_after=["generate_logos"],
     )
 
 

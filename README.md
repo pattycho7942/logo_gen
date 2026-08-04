@@ -1,11 +1,11 @@
 # LogoGen AI
 
-기업명과 슬로건(+업종/스타일/색상)을 입력하면 AI가 로고 시안 3개를 자동으로
-생성해주고, 그중 하나를 골라 명함까지 만들어주는 웹 서비스입니다. LangGraph로
-파이프라인을 구성해 진행 단계를 단계별로 시각화하고, ChatGPT(LLM)로 이미지
-생성 프롬프트를 보강한 뒤 HuggingFace text-to-image 모델로 로고 이미지를
-생성하고, 마지막으로 선택한 로고와 연락처 정보를 Pillow로 합성해 명함
-시안을 만듭니다.
+기업명과 슬로건(+업종/스타일/색상)을 입력하면 AI가 로고 시안 3개를 한 번에
+자동으로 생성해주고, 마음에 드는 시안을 클릭하는 즉시 그 로고로 명함까지
+만들어주는 웹 서비스입니다. LangGraph로 파이프라인을 구성해 진행 단계를
+단계별로 시각화하고, ChatGPT(LLM)로 이미지 생성 프롬프트를 보강한 뒤
+HuggingFace text-to-image 모델로 로고 이미지를 생성하고, 로고를 선택하는
+순간 그 로고와 연락처 정보를 Pillow로 합성해 명함 시안을 만듭니다.
 
 학습 진행 순서: **AI → LLM → EDA → ChatGPT+HuggingFace → LangChain/LangGraph**
 
@@ -14,9 +14,9 @@
 - **백엔드**: FastAPI + LangGraph (`backend/`)
   - `app/graph.py` — 4단계 노드(`collect_input` → `generate_prompt` →
     `generate_logos` → `generate_business_card`)로 구성된 StateGraph.
-    `MemorySaver` 체크포인터와 `interrupt_after`를 사용해 "프롬프트 생성",
-    "최종 로고 생성", "명함 생성" 세 번의 API 호출에 걸쳐 하나의 그래프
-    실행을 이어갑니다.
+    `MemorySaver` 체크포인터와 `interrupt_after`를 사용해 "로고 생성"(입력
+    확인 → 프롬프트 생성 → 로고 생성까지 한 번에 실행)과 "명함 생성"(로고
+    선택 즉시 실행) 두 번의 API 호출에 걸쳐 하나의 그래프 실행을 이어갑니다.
   - `app/services/llm_service.py` — OpenAI(ChatGPT) API로 프롬프트 보강,
     키가 없으면 템플릿 조합으로 자동 대체(fallback).
   - `app/services/image_service.py` — HuggingFace Inference API
@@ -29,10 +29,12 @@
     Nanum Gothic 폰트를 `app/assets/fonts/`에 번들링(OFL-1.1 라이선스).
     외부 API 호출이 없어 항상 안정적으로 동작합니다.
 - **프론트엔드**: React + Vite + TypeScript + Tailwind CSS (`frontend/`)
-  - 5단계 진행 스테퍼(`StepProgress`), 입력 폼(`LogoForm`), 프롬프트
-    미리보기(`PromptPreview`), 결과 그리드(`ResultsGrid`, 로고 클릭으로
-    명함에 쓸 로고 선택), 명함 정보 입력(`CardForm`), 명함 시안
-    미리보기(`CardPreview`)로 구성.
+  - 5단계 진행 스테퍼(`StepProgress`), 입력 폼(`LogoForm`, "로고 생성" 버튼
+    하나로 프롬프트 생성부터 로고 생성까지 즉시 실행), 프롬프트
+    미리보기(`PromptPreview`), 결과 그리드(`ResultsGrid`, 로고를 클릭하면
+    그 즉시 명함 생성이 실행됨), 명함 정보 입력(`CardForm`, 별도 제출
+    버튼 없이 로고 선택 시점의 값을 사용), 명함 시안 미리보기(`CardPreview`,
+    정보 수정 후 재생성 가능)로 구성.
 
 API 키가 없어도 전체 플로우가 데모(mock) 모드로 동작하며, `.env`에 실제 키를
 넣으면 자동으로 실제 API 호출로 전환됩니다.
@@ -104,14 +106,15 @@ npm run dev
 
 ### 3. 확인
 
-배포된 프론트엔드 주소로 접속해 회사명/슬로건 입력 → "프롬프트 생성" →
-"최종 로고 생성"까지 정상 동작하는지 확인. 만약 CORS 에러가 뜨면 백엔드의
+배포된 프론트엔드 주소로 접속해 회사명/슬로건 입력 → "로고 생성" → 로고
+시안 클릭까지 정상 동작하는지 확인. 만약 CORS 에러가 뜨면 백엔드의
 `FRONTEND_ORIGINS`에 프론트엔드 배포 주소가 정확히 포함되어 있는지 확인하세요.
 
 ## API
 
-- `POST /api/prompt/generate` — `{ company_name, slogan, industry?, style?, colors? }`
-  → `{ thread_id, generated_prompt, prompt_source, steps }`
-- `POST /api/logo/generate` — `{ thread_id }`
-  → `{ images, image_source, steps }` (images는 base64 PNG data URL 3개)
+- `POST /api/logo/generate` — `{ company_name, slogan, industry?, style?, colors? }`
+  → `{ thread_id, generated_prompt, prompt_source, images, image_source, steps }`
+  (images는 base64 PNG data URL 3개)
+- `POST /api/card/generate` — `{ thread_id, logo_index, contact_name?, title?, phone?, email?, address? }`
+  → `{ card_image, steps }` (card_image는 base64 PNG data URL)
 - `GET /api/health` — 서버 상태 및 실제 API 연동 여부 확인

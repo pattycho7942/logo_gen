@@ -14,14 +14,10 @@ export interface LogoFormValues {
   colors: string
 }
 
-export interface GeneratePromptResult {
+export interface GenerateLogosResult {
   threadId: string
   generatedPrompt: string
   promptSource: 'llm' | 'template'
-  steps: LogoStep[]
-}
-
-export interface GenerateLogosResult {
   images: string[]
   imageSource: 'huggingface' | 'openai' | 'placeholder'
   steps: LogoStep[]

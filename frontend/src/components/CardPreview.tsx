@@ -2,14 +2,26 @@ interface Props {
   cardImage: string
   loading: boolean
   companyName: string
+  onRegenerate: () => void
 }
 
-export default function CardPreview({ cardImage, loading, companyName }: Props) {
+export default function CardPreview({ cardImage, loading, companyName, onRegenerate }: Props) {
   if (!loading && !cardImage) return null
 
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="text-base font-semibold text-gray-900">명함 시안</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-semibold text-gray-900">명함 시안</h3>
+        {cardImage && !loading && (
+          <button
+            type="button"
+            onClick={onRegenerate}
+            className="text-xs font-medium text-violet-600 hover:underline"
+          >
+            정보 수정 후 다시 생성
+          </button>
+        )}
+      </div>
       {loading ? (
         <div className="aspect-[7/4] w-full animate-pulse rounded-2xl bg-gray-100" />
       ) : (

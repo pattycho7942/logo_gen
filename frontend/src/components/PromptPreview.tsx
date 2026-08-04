@@ -1,11 +1,9 @@
 interface Props {
   prompt: string
   promptSource: 'llm' | 'template'
-  onGenerateLogos: () => void
-  loading: boolean
 }
 
-export default function PromptPreview({ prompt, promptSource, onGenerateLogos, loading }: Props) {
+export default function PromptPreview({ prompt, promptSource }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -23,14 +21,6 @@ export default function PromptPreview({ prompt, promptSource, onGenerateLogos, l
       <p className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm leading-relaxed text-gray-700">
         {prompt}
       </p>
-      <button
-        type="button"
-        onClick={onGenerateLogos}
-        disabled={loading}
-        className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-violet-200 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {loading ? '로고 생성 중...' : '최종 로고 생성'}
-      </button>
     </div>
   )
 }
