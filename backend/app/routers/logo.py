@@ -2,13 +2,14 @@ import uuid
 
 from fastapi import APIRouter, HTTPException
 
-from app.graph import compiled_graph
+from app.graph import STEP_DEFS, compiled_graph
 from app.schemas import (
     GenerateCardRequest,
     GenerateCardResponse,
     GenerateLogosRequest,
     GenerateLogosResponse,
 )
+from app.services.card_service import generate_business_card as render_business_card
 
 router = APIRouter(prefix="/api", tags=["logo"])
 
@@ -44,29 +45,43 @@ def generate_business_card(payload: GenerateCardRequest) -> GenerateCardResponse
     config = {"configurable": {"thread_id": payload.thread_id}}
 
     state = compiled_graph.get_state(config)
-    images = state.values.get("images") if state.values else None
-    if not images:
+    if not state.values or "images" not in state.values:
         raise HTTPException(status_code=404, detail="로고를 먼저 생성해주세요.")
+
+    images = state.values["images"]
     if not 0 <= payload.logo_index < len(images):
         raise HTTPException(status_code=400, detail="유효하지 않은 로고 번호입니다.")
+
+    contact_name = (payload.contact_name or "").strip()
+    title = (payload.title or "").strip()
+    phone = (payload.phone or "").strip()
+    email = (payload.email or "").strip()
+    address = (payload.address or "").strip()
+
+    card_image = render_business_card(
+        logo_data_url=images[payload.logo_index],
+        company_name=state.values["company_name"],
+        slogan=state.values["slogan"],
+        contact_name=contact_name,
+        title=title,
+        phone=phone,
+        email=email,
+        address=address,
+    )
+    steps = [{"id": step_id, "label": label, "status": "done"} for step_id, label in STEP_DEFS]
 
     compiled_graph.update_state(
         config,
         {
             "logo_index": payload.logo_index,
-            "contact_name": (payload.contact_name or "").strip(),
-            "title": (payload.title or "").strip(),
-            "phone": (payload.phone or "").strip(),
-            "email": (payload.email or "").strip(),
-            "address": (payload.address or "").strip(),
+            "contact_name": contact_name,
+            "title": title,
+            "phone": phone,
+            "email": email,
+            "address": address,
+            "card_image": card_image,
+            "steps": steps,
         },
     )
-    result = compiled_graph.invoke(None, config=config)
 
-    if "card_image" not in result:
-        raise HTTPException(status_code=409, detail="명함을 아직 생성할 수 없습니다.")
-
-    return GenerateCardResponse(
-        card_image=result["card_image"],
-        steps=result["steps"],
-    )
+    return GenerateCardResponse(card_image=card_image, steps=steps)

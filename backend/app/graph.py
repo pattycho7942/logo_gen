@@ -3,7 +3,6 @@ from typing import TypedDict
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 
-from app.services.card_service import generate_business_card
 from app.services.image_service import generate_logos
 from app.services.llm_service import refine_prompt
 
@@ -75,44 +74,19 @@ def generate_logos_node(state: LogoState) -> dict:
     return {"images": images, "image_source": source, "steps": steps}
 
 
-def generate_business_card_node(state: LogoState) -> dict:
-    images = state.get("images") or []
-    logo_index = state.get("logo_index", 0)
-    if not 0 <= logo_index < len(images):
-        logo_index = 0
-
-    card_image = generate_business_card(
-        logo_data_url=images[logo_index],
-        company_name=state["company_name"],
-        slogan=state["slogan"],
-        contact_name=state.get("contact_name", ""),
-        title=state.get("title", ""),
-        phone=state.get("phone", ""),
-        email=state.get("email", ""),
-        address=state.get("address", ""),
-    )
-    steps = _mark_done(state.get("steps") or _initial_steps(), "generate_business_card", "done")
-    return {"card_image": card_image, "steps": steps}
-
-
 def build_graph():
     builder = StateGraph(LogoState)
     builder.add_node("collect_input", collect_input_node)
     builder.add_node("generate_prompt", generate_prompt_node)
     builder.add_node("generate_logos", generate_logos_node)
-    builder.add_node("generate_business_card", generate_business_card_node)
 
     builder.set_entry_point("collect_input")
     builder.add_edge("collect_input", "generate_prompt")
     builder.add_edge("generate_prompt", "generate_logos")
-    builder.add_edge("generate_logos", "generate_business_card")
-    builder.add_edge("generate_business_card", END)
+    builder.add_edge("generate_logos", END)
 
     checkpointer = MemorySaver()
-    return builder.compile(
-        checkpointer=checkpointer,
-        interrupt_after=["generate_logos"],
-    )
+    return builder.compile(checkpointer=checkpointer)
 
 
 compiled_graph = build_graph()
