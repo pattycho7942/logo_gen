@@ -3,6 +3,7 @@ from typing import TypedDict
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 
+from app.services.card_service import generate_business_card
 from app.services.image_service import generate_logos
 from app.services.llm_service import refine_prompt
 
@@ -10,6 +11,7 @@ STEP_DEFS = [
     ("collect_input", "입력 확인"),
     ("generate_prompt", "AI 프롬프트 생성 (ChatGPT)"),
     ("generate_logos", "로고 이미지 생성 (HuggingFace)"),
+    ("generate_business_card", "명함 생성 (Pillow)"),
     ("done", "완료"),
 ]
 
@@ -24,6 +26,13 @@ class LogoState(TypedDict, total=False):
     prompt_source: str
     images: list[str]
     image_source: str
+    logo_index: int
+    contact_name: str
+    title: str
+    phone: str
+    email: str
+    address: str
+    card_image: str
     steps: list[dict]
 
 
@@ -62,8 +71,28 @@ def generate_logos_node(state: LogoState) -> dict:
         company_name=state["company_name"],
         count=3,
     )
-    steps = _mark_done(state.get("steps") or _initial_steps(), "generate_logos", "done")
+    steps = _mark_done(state.get("steps") or _initial_steps(), "generate_logos")
     return {"images": images, "image_source": source, "steps": steps}
+
+
+def generate_business_card_node(state: LogoState) -> dict:
+    images = state.get("images") or []
+    logo_index = state.get("logo_index", 0)
+    if not 0 <= logo_index < len(images):
+        logo_index = 0
+
+    card_image = generate_business_card(
+        logo_data_url=images[logo_index],
+        company_name=state["company_name"],
+        slogan=state["slogan"],
+        contact_name=state.get("contact_name", ""),
+        title=state.get("title", ""),
+        phone=state.get("phone", ""),
+        email=state.get("email", ""),
+        address=state.get("address", ""),
+    )
+    steps = _mark_done(state.get("steps") or _initial_steps(), "generate_business_card", "done")
+    return {"card_image": card_image, "steps": steps}
 
 
 def build_graph():
@@ -71,14 +100,19 @@ def build_graph():
     builder.add_node("collect_input", collect_input_node)
     builder.add_node("generate_prompt", generate_prompt_node)
     builder.add_node("generate_logos", generate_logos_node)
+    builder.add_node("generate_business_card", generate_business_card_node)
 
     builder.set_entry_point("collect_input")
     builder.add_edge("collect_input", "generate_prompt")
     builder.add_edge("generate_prompt", "generate_logos")
-    builder.add_edge("generate_logos", END)
+    builder.add_edge("generate_logos", "generate_business_card")
+    builder.add_edge("generate_business_card", END)
 
     checkpointer = MemorySaver()
-    return builder.compile(checkpointer=checkpointer, interrupt_after=["generate_prompt"])
+    return builder.compile(
+        checkpointer=checkpointer,
+        interrupt_after=["generate_prompt", "generate_logos"],
+    )
 
 
 compiled_graph = build_graph()

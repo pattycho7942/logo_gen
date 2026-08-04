@@ -1,16 +1,23 @@
 import { useState } from 'react'
-import { requestLogoGeneration, requestPromptGeneration } from './api/client'
+import {
+  requestCardGeneration,
+  requestLogoGeneration,
+  requestPromptGeneration,
+} from './api/client'
+import CardForm from './components/CardForm'
+import CardPreview from './components/CardPreview'
 import LogoForm from './components/LogoForm'
 import PromptPreview from './components/PromptPreview'
 import ResultsGrid from './components/ResultsGrid'
 import StepProgress from './components/StepProgress'
 import TechBadges from './components/TechBadges'
-import type { LogoFormValues, LogoStep } from './types'
+import type { CardFormValues, LogoFormValues, LogoStep } from './types'
 
 const DEFAULT_STEPS: LogoStep[] = [
   { id: 'collect_input', label: '입력 확인', status: 'pending' },
   { id: 'generate_prompt', label: 'AI 프롬프트 생성 (ChatGPT)', status: 'pending' },
   { id: 'generate_logos', label: '로고 이미지 생성 (HuggingFace)', status: 'pending' },
+  { id: 'generate_business_card', label: '명함 생성 (Pillow)', status: 'pending' },
   { id: 'done', label: '완료', status: 'pending' },
 ]
 
@@ -20,6 +27,14 @@ const DEFAULT_VALUES: LogoFormValues = {
   industry: '',
   style: '',
   colors: '',
+}
+
+const DEFAULT_CARD_VALUES: CardFormValues = {
+  contactName: '',
+  title: '',
+  phone: '',
+  email: '',
+  address: '',
 }
 
 function Card({ children }: { children: React.ReactNode }) {
@@ -38,8 +53,12 @@ export default function App() {
   const [promptSource, setPromptSource] = useState<'llm' | 'template'>('template')
   const [images, setImages] = useState<string[]>([])
   const [imageSource, setImageSource] = useState<'huggingface' | 'openai' | 'placeholder'>('placeholder')
+  const [selectedLogoIndex, setSelectedLogoIndex] = useState<number | null>(null)
+  const [cardValues, setCardValues] = useState<CardFormValues>(DEFAULT_CARD_VALUES)
+  const [cardImage, setCardImage] = useState<string>('')
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false)
   const [isGeneratingLogos, setIsGeneratingLogos] = useState(false)
+  const [isGeneratingCard, setIsGeneratingCard] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const displaySteps = steps.map((step) => {
@@ -49,6 +68,9 @@ export default function App() {
     if (isGeneratingLogos && step.id === 'generate_logos' && step.status === 'pending') {
       return { ...step, status: 'active' as const }
     }
+    if (isGeneratingCard && step.id === 'generate_business_card' && step.status === 'pending') {
+      return { ...step, status: 'active' as const }
+    }
     return step
   })
 
@@ -56,6 +78,8 @@ export default function App() {
     setErrorMessage(null)
     setIsGeneratingPrompt(true)
     setImages([])
+    setSelectedLogoIndex(null)
+    setCardImage('')
     try {
       const result = await requestPromptGeneration(formValues)
       setThreadId(result.threadId)
@@ -73,6 +97,8 @@ export default function App() {
     if (!threadId) return
     setErrorMessage(null)
     setIsGeneratingLogos(true)
+    setSelectedLogoIndex(null)
+    setCardImage('')
     try {
       const result = await requestLogoGeneration(threadId)
       setImages(result.images)
@@ -82,6 +108,21 @@ export default function App() {
       setErrorMessage(err instanceof Error ? err.message : '로고 생성에 실패했습니다.')
     } finally {
       setIsGeneratingLogos(false)
+    }
+  }
+
+  async function handleGenerateCard() {
+    if (!threadId || selectedLogoIndex === null) return
+    setErrorMessage(null)
+    setIsGeneratingCard(true)
+    try {
+      const result = await requestCardGeneration(threadId, selectedLogoIndex, cardValues)
+      setCardImage(result.cardImage)
+      setSteps(result.steps)
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : '명함 생성에 실패했습니다.')
+    } finally {
+      setIsGeneratingCard(false)
     }
   }
 
@@ -154,6 +195,30 @@ export default function App() {
                 images={images}
                 imageSource={imageSource}
                 loading={isGeneratingLogos}
+                companyName={formValues.companyName}
+                selectedIndex={selectedLogoIndex}
+                onSelect={setSelectedLogoIndex}
+              />
+            </Card>
+          )}
+
+          {images.length > 0 && !isGeneratingLogos && (
+            <Card>
+              <CardForm
+                values={cardValues}
+                onChange={setCardValues}
+                onSubmit={handleGenerateCard}
+                loading={isGeneratingCard}
+                logoSelected={selectedLogoIndex !== null}
+              />
+            </Card>
+          )}
+
+          {(cardImage || isGeneratingCard) && (
+            <Card>
+              <CardPreview
+                cardImage={cardImage}
+                loading={isGeneratingCard}
                 companyName={formValues.companyName}
               />
             </Card>

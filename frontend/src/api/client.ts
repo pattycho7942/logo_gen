@@ -1,4 +1,6 @@
 import type {
+  CardFormValues,
+  GenerateCardResult,
   GenerateLogosResult,
   GeneratePromptResult,
   LogoFormValues,
@@ -79,6 +81,36 @@ export async function requestLogoGeneration(
   return {
     images: data.images,
     imageSource: data.image_source,
+    steps: toSteps(data.steps),
+  }
+}
+
+export async function requestCardGeneration(
+  threadId: string,
+  logoIndex: number,
+  card: CardFormValues,
+): Promise<GenerateCardResult> {
+  const response = await fetch(`${API_BASE}/api/card/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      thread_id: threadId,
+      logo_index: logoIndex,
+      contact_name: card.contactName || undefined,
+      title: card.title || undefined,
+      phone: card.phone || undefined,
+      email: card.email || undefined,
+      address: card.address || undefined,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response))
+  }
+
+  const data = await response.json()
+  return {
+    cardImage: data.card_image,
     steps: toSteps(data.steps),
   }
 }

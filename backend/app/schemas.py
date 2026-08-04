@@ -32,3 +32,18 @@ class GenerateLogosResponse(BaseModel):
     images: list[str]  # base64 data URLs
     image_source: str  # "huggingface" | "openai" | "placeholder"
     steps: list[LogoStep]
+
+
+class GenerateCardRequest(BaseModel):
+    thread_id: str
+    logo_index: int = Field(..., ge=0, le=2)
+    contact_name: Optional[str] = None
+    title: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    address: Optional[str] = None
+
+
+class GenerateCardResponse(BaseModel):
+    card_image: str  # base64 data URL
+    steps: list[LogoStep]

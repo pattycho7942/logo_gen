@@ -26,3 +26,16 @@ export interface GenerateLogosResult {
   imageSource: 'huggingface' | 'openai' | 'placeholder'
   steps: LogoStep[]
 }
+
+export interface CardFormValues {
+  contactName: string
+  title: string
+  phone: string
+  email: string
+  address: string
+}
+
+export interface GenerateCardResult {
+  cardImage: string
+  steps: LogoStep[]
+}

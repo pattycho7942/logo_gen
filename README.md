@@ -1,19 +1,22 @@
 # LogoGen AI
 
 기업명과 슬로건(+업종/스타일/색상)을 입력하면 AI가 로고 시안 3개를 자동으로
-생성해주는 웹 서비스입니다. LangGraph로 파이프라인을 구성해 진행 단계를
-단계별로 시각화하고, ChatGPT(LLM)로 이미지 생성 프롬프트를 보강한 뒤
-HuggingFace text-to-image 모델로 로고 이미지를 생성합니다.
+생성해주고, 그중 하나를 골라 명함까지 만들어주는 웹 서비스입니다. LangGraph로
+파이프라인을 구성해 진행 단계를 단계별로 시각화하고, ChatGPT(LLM)로 이미지
+생성 프롬프트를 보강한 뒤 HuggingFace text-to-image 모델로 로고 이미지를
+생성하고, 마지막으로 선택한 로고와 연락처 정보를 Pillow로 합성해 명함
+시안을 만듭니다.
 
 학습 진행 순서: **AI → LLM → EDA → ChatGPT+HuggingFace → LangChain/LangGraph**
 
 ## 아키텍처
 
 - **백엔드**: FastAPI + LangGraph (`backend/`)
-  - `app/graph.py` — 3단계 노드(`collect_input` → `generate_prompt` →
-    `generate_logos`)로 구성된 StateGraph. `MemorySaver` 체크포인터와
-    `interrupt_after`를 사용해 "프롬프트 생성" 버튼과 "최종 로고 생성" 버튼,
-    두 번의 API 호출에 걸쳐 하나의 그래프 실행을 이어갑니다.
+  - `app/graph.py` — 4단계 노드(`collect_input` → `generate_prompt` →
+    `generate_logos` → `generate_business_card`)로 구성된 StateGraph.
+    `MemorySaver` 체크포인터와 `interrupt_after`를 사용해 "프롬프트 생성",
+    "최종 로고 생성", "명함 생성" 세 번의 API 호출에 걸쳐 하나의 그래프
+    실행을 이어갑니다.
   - `app/services/llm_service.py` — OpenAI(ChatGPT) API로 프롬프트 보강,
     키가 없으면 템플릿 조합으로 자동 대체(fallback).
   - `app/services/image_service.py` — HuggingFace Inference API
@@ -21,9 +24,15 @@ HuggingFace text-to-image 모델로 로고 이미지를 생성합니다.
     호출이 실패하면 OpenAI Images API(`gpt-image-1`)로 자동 대체, 그마저도
     안 되면(키 없음 등) Pillow로 만든 데모용 플레이스홀더 로고 3종으로
     최종 대체.
+  - `app/services/card_service.py` — 선택된 로고 이미지와 이름/직함/전화/
+    이메일/주소를 Pillow로 명함 사이즈 캔버스에 합성. 한글 렌더링을 위해
+    Nanum Gothic 폰트를 `app/assets/fonts/`에 번들링(OFL-1.1 라이선스).
+    외부 API 호출이 없어 항상 안정적으로 동작합니다.
 - **프론트엔드**: React + Vite + TypeScript + Tailwind CSS (`frontend/`)
-  - 4단계 진행 스테퍼(`StepProgress`), 입력 폼(`LogoForm`), 프롬프트
-    미리보기(`PromptPreview`), 결과 그리드(`ResultsGrid`)로 구성.
+  - 5단계 진행 스테퍼(`StepProgress`), 입력 폼(`LogoForm`), 프롬프트
+    미리보기(`PromptPreview`), 결과 그리드(`ResultsGrid`, 로고 클릭으로
+    명함에 쓸 로고 선택), 명함 정보 입력(`CardForm`), 명함 시안
+    미리보기(`CardPreview`)로 구성.
 
 API 키가 없어도 전체 플로우가 데모(mock) 모드로 동작하며, `.env`에 실제 키를
 넣으면 자동으로 실제 API 호출로 전환됩니다.
