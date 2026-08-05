@@ -1,8 +1,9 @@
 import base64
 import io
+from collections import deque
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 _FONT_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
 _REGULAR_FONT_PATH = _FONT_DIR / "NanumGothic.ttf"
@@ -37,20 +38,49 @@ def _accent_color(logo: Image.Image) -> tuple[int, int, int]:
     return logo.resize((1, 1)).getpixel((0, 0))
 
 
-def _strip_background(logo: Image.Image, tolerance: int = 36) -> Image.Image:
-    rgb = logo.convert("RGB")
-    corners = [
-        rgb.getpixel((0, 0)),
-        rgb.getpixel((rgb.width - 1, 0)),
-        rgb.getpixel((0, rgb.height - 1)),
-        rgb.getpixel((rgb.width - 1, rgb.height - 1)),
-    ]
-    bg_color = tuple(sum(c[i] for c in corners) // len(corners) for i in range(3))
+def _background_mask(rgb: Image.Image, tolerance: int, work_size: int) -> Image.Image:
+    # Flood-fills from the image border inward, comparing each candidate pixel
+    # only to its already-confirmed-background neighbor (not one fixed color).
+    # That lets it follow soft gradients/vignettes in generated logos while
+    # still stopping at the mark's sharp-contrast edge, regardless of how
+    # large a solid-color area the mark itself covers.
+    small = rgb.resize((work_size, work_size), Image.BILINEAR)
+    px = small.load()
+    w = h = work_size
 
-    bg_plate = Image.new("RGB", rgb.size, bg_color)
-    diff_r, diff_g, diff_b = ImageChops.difference(rgb, bg_plate).split()
-    distance = ImageChops.lighter(ImageChops.lighter(diff_r, diff_g), diff_b)
-    alpha = distance.point(lambda p: 255 if p > tolerance else 0)
+    visited = [[False] * w for _ in range(h)]
+    is_background = [[False] * w for _ in range(h)]
+    queue: deque[tuple[int, int]] = deque()
+
+    for x in range(w):
+        for y in (0, h - 1):
+            visited[y][x] = True
+            queue.append((x, y))
+    for y in range(h):
+        for x in (0, w - 1):
+            if not visited[y][x]:
+                visited[y][x] = True
+                queue.append((x, y))
+
+    while queue:
+        x, y = queue.popleft()
+        is_background[y][x] = True
+        r0, g0, b0 = px[x, y]
+        for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if 0 <= nx < w and 0 <= ny < h and not visited[ny][nx]:
+                r1, g1, b1 = px[nx, ny]
+                if max(abs(r1 - r0), abs(g1 - g0), abs(b1 - b0)) <= tolerance:
+                    visited[ny][nx] = True
+                    queue.append((nx, ny))
+
+    mask = Image.new("L", (w, h))
+    mask.putdata([0 if is_background[y][x] else 255 for y in range(h) for x in range(w)])
+    return mask.resize(rgb.size, Image.BILINEAR)
+
+
+def _strip_background(logo: Image.Image, tolerance: int = 22, work_size: int = 128) -> Image.Image:
+    rgb = logo.convert("RGB")
+    alpha = _background_mask(rgb, tolerance, work_size)
 
     result = rgb.convert("RGBA")
     result.putalpha(alpha)
