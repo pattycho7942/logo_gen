@@ -38,15 +38,35 @@ def _accent_color(logo: Image.Image) -> tuple[int, int, int]:
     return logo.resize((1, 1)).getpixel((0, 0))
 
 
-def _background_mask(rgb: Image.Image, tolerance: int, work_size: int) -> Image.Image:
+def _background_mask(rgb: Image.Image, tolerance: int, global_cap: int, work_size: int) -> Image.Image:
     # Flood-fills from the image border inward, comparing each candidate pixel
     # only to its already-confirmed-background neighbor (not one fixed color).
     # That lets it follow soft gradients/vignettes in generated logos while
     # still stopping at the mark's sharp-contrast edge, regardless of how
     # large a solid-color area the mark itself covers.
+    #
+    # A per-step-only check is fooled by anti-aliased mark edges: the smooth
+    # ramp from background into the mark's color looks like just another
+    # gradient one pixel at a time, so the fill can leak straight through and
+    # swallow the whole mark. global_cap bounds how far a pixel's color is
+    # allowed to drift from the border's own average before it can still be
+    # called "background", which a real gradient background stays within but
+    # a leak into a saturated mark color does not.
     small = rgb.resize((work_size, work_size), Image.BILINEAR)
     px = small.load()
     w = h = work_size
+
+    border_samples = []
+    for x in range(w):
+        border_samples.append(px[x, 0])
+        border_samples.append(px[x, h - 1])
+    for y in range(h):
+        border_samples.append(px[0, y])
+        border_samples.append(px[w - 1, y])
+    ref = tuple(sum(c[i] for c in border_samples) // len(border_samples) for i in range(3))
+
+    def within_cap(r: int, g: int, b: int) -> bool:
+        return max(abs(r - ref[0]), abs(g - ref[1]), abs(b - ref[2])) <= global_cap
 
     visited = [[False] * w for _ in range(h)]
     is_background = [[False] * w for _ in range(h)]
@@ -54,11 +74,12 @@ def _background_mask(rgb: Image.Image, tolerance: int, work_size: int) -> Image.
 
     for x in range(w):
         for y in (0, h - 1):
-            visited[y][x] = True
-            queue.append((x, y))
+            if within_cap(*px[x, y]):
+                visited[y][x] = True
+                queue.append((x, y))
     for y in range(h):
         for x in (0, w - 1):
-            if not visited[y][x]:
+            if not visited[y][x] and within_cap(*px[x, y]):
                 visited[y][x] = True
                 queue.append((x, y))
 
@@ -69,7 +90,7 @@ def _background_mask(rgb: Image.Image, tolerance: int, work_size: int) -> Image.
         for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
             if 0 <= nx < w and 0 <= ny < h and not visited[ny][nx]:
                 r1, g1, b1 = px[nx, ny]
-                if max(abs(r1 - r0), abs(g1 - g0), abs(b1 - b0)) <= tolerance:
+                if max(abs(r1 - r0), abs(g1 - g0), abs(b1 - b0)) <= tolerance and within_cap(r1, g1, b1):
                     visited[ny][nx] = True
                     queue.append((nx, ny))
 
@@ -78,9 +99,9 @@ def _background_mask(rgb: Image.Image, tolerance: int, work_size: int) -> Image.
     return mask.resize(rgb.size, Image.BILINEAR)
 
 
-def _strip_background(logo: Image.Image, tolerance: int = 22, work_size: int = 128) -> Image.Image:
+def _strip_background(logo: Image.Image, tolerance: int = 18, global_cap: int = 90, work_size: int = 128) -> Image.Image:
     rgb = logo.convert("RGB")
-    alpha = _background_mask(rgb, tolerance, work_size)
+    alpha = _background_mask(rgb, tolerance, global_cap, work_size)
 
     result = rgb.convert("RGBA")
     result.putalpha(alpha)
