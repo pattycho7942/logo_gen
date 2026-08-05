@@ -99,7 +99,7 @@ def _background_mask(rgb: Image.Image, tolerance: int, global_cap: int, work_siz
     return mask.resize(rgb.size, Image.BILINEAR)
 
 
-def _strip_background(logo: Image.Image, tolerance: int = 18, global_cap: int = 90, work_size: int = 128) -> Image.Image:
+def _strip_background(logo: Image.Image, tolerance: int = 18, global_cap: int = 90, work_size: int = 256) -> Image.Image:
     rgb = logo.convert("RGB")
     alpha = _background_mask(rgb, tolerance, global_cap, work_size)
 
