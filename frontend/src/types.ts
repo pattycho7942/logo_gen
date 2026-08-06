@@ -15,7 +15,6 @@ export interface LogoFormValues {
 }
 
 export interface GenerateLogosResult {
-  threadId: string
   generatedPrompt: string
   promptSource: 'llm' | 'template'
   images: string[]

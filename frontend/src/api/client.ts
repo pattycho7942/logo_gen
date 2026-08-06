@@ -56,7 +56,6 @@ export async function requestLogoGeneration(
 
   const data = await response.json()
   return {
-    threadId: data.thread_id,
     generatedPrompt: data.generated_prompt,
     promptSource: data.prompt_source,
     images: data.images,
@@ -66,16 +65,18 @@ export async function requestLogoGeneration(
 }
 
 export async function requestCardGeneration(
-  threadId: string,
-  logoIndex: number,
+  companyName: string,
+  slogan: string,
+  logoDataUrl: string,
   card: CardFormValues,
 ): Promise<GenerateCardResult> {
   const response = await fetch(`${API_BASE}/api/card/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      thread_id: threadId,
-      logo_index: logoIndex,
+      company_name: companyName,
+      slogan: slogan,
+      logo_data_url: logoDataUrl,
       contact_name: card.contactName || undefined,
       title: card.title || undefined,
       phone: card.phone || undefined,

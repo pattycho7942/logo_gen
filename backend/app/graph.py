@@ -1,6 +1,5 @@
 from typing import TypedDict
 
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 
 from app.services.image_service import generate_logos
@@ -25,14 +24,6 @@ class LogoState(TypedDict, total=False):
     prompt_source: str
     images: list[str]
     image_source: str
-    logo_index: int
-    contact_name: str
-    title: str
-    phone: str
-    email: str
-    address: str
-    layout: str
-    card_image: str
     steps: list[dict]
 
 
@@ -86,8 +77,7 @@ def build_graph():
     builder.add_edge("generate_prompt", "generate_logos")
     builder.add_edge("generate_logos", END)
 
-    checkpointer = MemorySaver()
-    return builder.compile(checkpointer=checkpointer)
+    return builder.compile()
 
 
 compiled_graph = build_graph()
