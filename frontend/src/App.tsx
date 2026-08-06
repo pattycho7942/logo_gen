@@ -31,6 +31,7 @@ const DEFAULT_CARD_VALUES: CardFormValues = {
   phone: '',
   email: '',
   address: '',
+  layout: 'classic',
 }
 
 function Card({ children }: { children: React.ReactNode }) {
@@ -44,7 +45,6 @@ function Card({ children }: { children: React.ReactNode }) {
 export default function App() {
   const [formValues, setFormValues] = useState<LogoFormValues>(DEFAULT_VALUES)
   const [steps, setSteps] = useState<LogoStep[]>(DEFAULT_STEPS)
-  const [threadId, setThreadId] = useState<string | null>(null)
   const [generatedPrompt, setGeneratedPrompt] = useState('')
   const [promptSource, setPromptSource] = useState<'llm' | 'template'>('template')
   const [images, setImages] = useState<string[]>([])
@@ -78,7 +78,6 @@ export default function App() {
     setCardImage('')
     try {
       const result = await requestLogoGeneration(formValues)
-      setThreadId(result.threadId)
       setGeneratedPrompt(result.generatedPrompt)
       setPromptSource(result.promptSource)
       setImages(result.images)
@@ -92,12 +91,18 @@ export default function App() {
   }
 
   async function handleGenerateCard(logoIndex: number) {
-    if (!threadId) return
+    const logoDataUrl = images[logoIndex]
+    if (!logoDataUrl) return
     setErrorMessage(null)
     setSelectedLogoIndex(logoIndex)
     setIsGeneratingCard(true)
     try {
-      const result = await requestCardGeneration(threadId, logoIndex, cardValues)
+      const result = await requestCardGeneration(
+        formValues.companyName,
+        formValues.slogan,
+        logoDataUrl,
+        cardValues,
+      )
       setCardImage(result.cardImage)
       setSteps(result.steps)
     } catch (err) {
