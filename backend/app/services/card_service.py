@@ -96,7 +96,15 @@ def _background_mask(rgb: Image.Image, tolerance: int, global_cap: int, work_siz
 
     mask = Image.new("L", (w, h))
     mask.putdata([0 if is_background[y][x] else 255 for y in range(h) for x in range(w)])
-    return mask.resize(rgb.size, Image.BILINEAR)
+    upscaled = mask.resize(rgb.size, Image.BILINEAR)
+    # BILINEAR upscaling turns the boundary into a smooth 0-255 ramp, which
+    # is normally just soft anti-aliasing — but for logos with lots of fine
+    # detail (small text, dense line art), "near a boundary" covers so much
+    # of the image that large areas end up at partial alpha. Composited over
+    # the card's white background that reads as the whole logo looking
+    # washed out/translucent instead of a crisp cutout, so snap back to a
+    # hard 0/255 mask rather than risk that.
+    return upscaled.point(lambda p: 255 if p >= 128 else 0)
 
 
 def _strip_background(logo: Image.Image, tolerance: int = 18, global_cap: int = 90, work_size: int = 256) -> Image.Image:
